@@ -1,0 +1,287 @@
+-- in.cue --
+a: close({
+	a: b: int
+})
+
+b: a & {x:    int} // err
+c: a & {a: c: int} // okay (non-recursive close)
+
+inDisjunctions: {
+	x: [string]: #Def
+	#Def: [string]: {
+		a: b: true
+		let X = a
+		close({uint: a: b: X.b}) | close({string: a: b: true})
+	}
+	x: socket: string: {}
+	x: syslog: x.socket
+	x: syslog: xxx: {}
+}
+
+issue642: {
+	test: close({
+		a: _
+		b: x: _
+	} & {
+		[string]: y: _
+	})
+
+	test: a: x: _
+	test: b: x: _
+}
+
+// Issue 642
+withSubfields: {
+	test: close({
+		a: _
+		b: x:        _
+		[string]: y: _
+	})
+
+	test: a: x: _
+	test: b: x: _
+}
+-- out/eval/stats --
+Leaks:  39
+Freed:  160
+Reused: 150
+Allocs: 49
+Retain: 40
+
+Unifications: 185
+Conjuncts:    365
+Disjuncts:    190
+-- out/eval --
+Errors:
+b.x: field not allowed:
+    ./in.cue:1:10
+    ./in.cue:5:4
+    ./in.cue:5:9
+
+Result:
+(_|_){
+  // [eval]
+  a: (#struct){
+    a: (struct){
+      b: (int){ int }
+    }
+  }
+  b: (_|_){
+    // [eval]
+    a: (struct){
+      b: (int){ int }
+    }
+    x: (_|_){
+      // [eval] b.x: field not allowed:
+      //     ./in.cue:1:10
+      //     ./in.cue:5:4
+      //     ./in.cue:5:9
+    }
+  }
+  c: (#struct){
+    a: (struct){
+      b: (int){ int }
+      c: (int){ int }
+    }
+  }
+  inDisjunctions: (struct){
+    x: (struct){
+      socket: (#struct){
+        string: (#struct){ |((#struct){
+            a: (#struct){
+              b: (bool){ true }
+            }
+            let X#1 = (#struct){
+              b: (bool){ true }
+            }
+            uint: (#struct){
+              a: (#struct){
+                b: (bool){ true }
+              }
+            }
+          }, (#struct){
+            a: (#struct){
+              b: (bool){ true }
+            }
+            let X#1 = (#struct){
+              b: (bool){ true }
+            }
+            string: (#struct){
+              a: (#struct){
+                b: (bool){ true }
+              }
+            }
+          }) }
+      }
+      syslog: (#struct){
+        string: (#struct){ |((#struct){
+            a: (#struct){
+              b: (bool){ true }
+            }
+            let X#1multi = 〈0;a〉
+            uint: (#struct){
+              a: (#struct){
+                b: (bool){ true }
+              }
+            }
+          }, (#struct){
+            a: (#struct){
+              b: (bool){ true }
+            }
+            let X#1multi = 〈0;a〉
+            string: (#struct){
+              a: (#struct){
+                b: (bool){ true }
+              }
+            }
+          }) }
+        xxx: (#struct){ |((#struct){
+            a: (#struct){
+              b: (bool){ true }
+            }
+            let X#1multi = 〈0;a〉
+            uint: (#struct){
+              a: (#struct){
+                b: (bool){ true }
+              }
+            }
+          }, (#struct){
+            a: (#struct){
+              b: (bool){ true }
+            }
+            let X#1multi = 〈0;a〉
+            string: (#struct){
+              a: (#struct){
+                b: (bool){ true }
+              }
+            }
+          }) }
+      }
+    }
+    #Def: (#struct){
+    }
+  }
+  issue642: (struct){
+    test: (#struct){
+      a: (struct){
+        x: (_){ _ }
+        y: (_){ _ }
+      }
+      b: (struct){
+        x: (_){ _ }
+        y: (_){ _ }
+      }
+    }
+  }
+  withSubfields: (struct){
+    test: (#struct){
+      a: (struct){
+        x: (_){ _ }
+        y: (_){ _ }
+      }
+      b: (struct){
+        x: (_){ _ }
+        y: (_){ _ }
+      }
+    }
+  }
+}
+-- out/compile --
+--- in.cue
+{
+  a: close({
+    a: {
+      b: int
+    }
+  })
+  b: (〈0;a〉 & {
+    x: int
+  })
+  c: (〈0;a〉 & {
+    a: {
+      c: int
+    }
+  })
+  inDisjunctions: {
+    x: {
+      [string]: 〈1;#Def〉
+    }
+    #Def: {
+      [string]: {
+        a: {
+          b: true
+        }
+        let X#1 = 〈0;a〉
+        (close({
+          uint: {
+            a: {
+              b: 〈3;let X#1〉.b
+            }
+          }
+        })|close({
+          string: {
+            a: {
+              b: true
+            }
+          }
+        }))
+      }
+    }
+    x: {
+      socket: {
+        string: {}
+      }
+    }
+    x: {
+      syslog: 〈1;x〉.socket
+    }
+    x: {
+      syslog: {
+        xxx: {}
+      }
+    }
+  }
+  issue642: {
+    test: close(({
+      a: _
+      b: {
+        x: _
+      }
+    } & {
+      [string]: {
+        y: _
+      }
+    }))
+    test: {
+      a: {
+        x: _
+      }
+    }
+    test: {
+      b: {
+        x: _
+      }
+    }
+  }
+  withSubfields: {
+    test: close({
+      a: _
+      b: {
+        x: _
+      }
+      [string]: {
+        y: _
+      }
+    })
+    test: {
+      a: {
+        x: _
+      }
+    }
+    test: {
+      b: {
+        x: _
+      }
+    }
+  }
+}

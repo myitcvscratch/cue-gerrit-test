@@ -1,0 +1,24 @@
+-- in.cue --
+a: b: {
+	for x in b {}
+
+	x: {
+		c: m
+		d: y
+		e: f
+		f: 1
+		// TODO: should we return non-existing references? If so, how?
+		g: b.z
+	}
+	y: 3
+}
+
+m: 3
+-- out/dependencies/field --
+-- out/dependencies/all --
+m
+-- out/dependencies/dynamic --
+m
+a.b.y
+a.b.x.f
+a.b

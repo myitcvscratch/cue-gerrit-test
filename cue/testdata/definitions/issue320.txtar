@@ -1,0 +1,67 @@
+-- in.cue --
+#Foo: {
+	x: string
+	#More
+}
+
+#More: [=~"^x-"]: _
+
+foo: #Foo & {
+	x: "hello"
+	y: "goodbye"
+}
+-- out/eval/stats --
+Leaks:  0
+Freed:  7
+Reused: 4
+Allocs: 3
+Retain: 1
+
+Unifications: 7
+Conjuncts:    14
+Disjuncts:    8
+-- out/eval --
+Errors:
+foo.y: field not allowed:
+    ./in.cue:1:7
+    ./in.cue:3:2
+    ./in.cue:6:8
+    ./in.cue:8:6
+    ./in.cue:10:2
+
+Result:
+(_|_){
+  // [eval]
+  #Foo: (#struct){
+    x: (string){ string }
+  }
+  #More: (#struct){
+  }
+  foo: (_|_){
+    // [eval]
+    x: (string){ "hello" }
+    y: (_|_){
+      // [eval] foo.y: field not allowed:
+      //     ./in.cue:1:7
+      //     ./in.cue:3:2
+      //     ./in.cue:6:8
+      //     ./in.cue:8:6
+      //     ./in.cue:10:2
+    }
+  }
+}
+-- out/compile --
+--- in.cue
+{
+  #Foo: {
+    x: string
+    〈1;#More〉
+  }
+  #More: {
+    [=~"^x-"]: _
+  }
+  foo: (〈0;#Foo〉 & {
+    x: "hello"
+    y: "goodbye"
+  })
+}

@@ -1,0 +1,189 @@
+-- in.cue --
+import "regexp"
+
+// Issue #655
+// When evaluating a value into a struct, and then back into a value, the
+// evaluation mode flips from Partial to AllConjunctsDone to Back. This is
+// typically not an issue, but if a referred field is within a struct generated
+// by a builtin, effectively the entire struct needs to be evaluated and special
+// care should be taking to not evaluate too early.
+builtinCyclePerm0: {
+	X: "mod.test"
+
+	Y: {
+		#components: regexp.FindNamedSubmatch(#"^(?P<host>[[:alnum:].]+)$"#, X)
+		host:        #components.host
+	}
+
+	X: Y.host
+}
+
+builtinCyclePerm1: {
+	X: Y.host
+
+	Y: {
+		#components: regexp.FindNamedSubmatch(#"^(?P<host>[[:alnum:].]+)$"#, X)
+		host:        #components.host
+	}
+
+	X: "mod.test"
+}
+
+builtinCyclePerm2: {
+	Y: {
+		#components: regexp.FindNamedSubmatch(#"^(?P<host>[[:alnum:].]+)$"#, X)
+		host:        #components.host
+	}
+
+	X: Y.host
+	X: "mod.test"
+}
+
+builtinCyclePerm3: {
+	Y: {
+		#components: regexp.FindNamedSubmatch(#"^(?P<host>[[:alnum:].]+)$"#, X)
+		host:        #components.host
+	}
+
+	X: "mod.test"
+	X: Y.host
+}
+
+builtinCyclePerm4: {
+	X: "mod.test"
+	X: Y.host
+
+	Y: {
+		#components: regexp.FindNamedSubmatch(#"^(?P<host>[[:alnum:].]+)$"#, X)
+		host:        #components.host
+	}
+}
+
+builtinCyclePerm5: {
+	X: Y.host
+	X: "mod.test"
+
+	Y: {
+		#components: regexp.FindNamedSubmatch(#"^(?P<host>[[:alnum:].]+)$"#, X)
+		host:        #components.host
+	}
+}
+-- out/eval/stats --
+Leaks:  0
+Freed:  37
+Reused: 30
+Allocs: 7
+Retain: 34
+
+Unifications: 37
+Conjuncts:    61
+Disjuncts:    61
+-- out/eval --
+(struct){
+  builtinCyclePerm0: (struct){
+    X: (string){ "mod.test" }
+    Y: (struct){
+      #components: (#struct){
+        host: (string){ "mod.test" }
+      }
+      host: (string){ "mod.test" }
+    }
+  }
+  builtinCyclePerm1: (struct){
+    X: (string){ "mod.test" }
+    Y: (struct){
+      #components: (#struct){
+        host: (string){ "mod.test" }
+      }
+      host: (string){ "mod.test" }
+    }
+  }
+  builtinCyclePerm2: (struct){
+    Y: (struct){
+      #components: (#struct){
+        host: (string){ "mod.test" }
+      }
+      host: (string){ "mod.test" }
+    }
+    X: (string){ "mod.test" }
+  }
+  builtinCyclePerm3: (struct){
+    Y: (struct){
+      #components: (#struct){
+        host: (string){ "mod.test" }
+      }
+      host: (string){ "mod.test" }
+    }
+    X: (string){ "mod.test" }
+  }
+  builtinCyclePerm4: (struct){
+    X: (string){ "mod.test" }
+    Y: (struct){
+      #components: (#struct){
+        host: (string){ "mod.test" }
+      }
+      host: (string){ "mod.test" }
+    }
+  }
+  builtinCyclePerm5: (struct){
+    X: (string){ "mod.test" }
+    Y: (struct){
+      #components: (#struct){
+        host: (string){ "mod.test" }
+      }
+      host: (string){ "mod.test" }
+    }
+  }
+}
+-- out/compile --
+--- in.cue
+{
+  builtinCyclePerm0: {
+    X: "mod.test"
+    Y: {
+      #components: 〈import;regexp〉.FindNamedSubmatch("^(?P<host>[[:alnum:].]+)$", 〈1;X〉)
+      host: 〈0;#components〉.host
+    }
+    X: 〈0;Y〉.host
+  }
+  builtinCyclePerm1: {
+    X: 〈0;Y〉.host
+    Y: {
+      #components: 〈import;regexp〉.FindNamedSubmatch("^(?P<host>[[:alnum:].]+)$", 〈1;X〉)
+      host: 〈0;#components〉.host
+    }
+    X: "mod.test"
+  }
+  builtinCyclePerm2: {
+    Y: {
+      #components: 〈import;regexp〉.FindNamedSubmatch("^(?P<host>[[:alnum:].]+)$", 〈1;X〉)
+      host: 〈0;#components〉.host
+    }
+    X: 〈0;Y〉.host
+    X: "mod.test"
+  }
+  builtinCyclePerm3: {
+    Y: {
+      #components: 〈import;regexp〉.FindNamedSubmatch("^(?P<host>[[:alnum:].]+)$", 〈1;X〉)
+      host: 〈0;#components〉.host
+    }
+    X: "mod.test"
+    X: 〈0;Y〉.host
+  }
+  builtinCyclePerm4: {
+    X: "mod.test"
+    X: 〈0;Y〉.host
+    Y: {
+      #components: 〈import;regexp〉.FindNamedSubmatch("^(?P<host>[[:alnum:].]+)$", 〈1;X〉)
+      host: 〈0;#components〉.host
+    }
+  }
+  builtinCyclePerm5: {
+    X: 〈0;Y〉.host
+    X: "mod.test"
+    Y: {
+      #components: 〈import;regexp〉.FindNamedSubmatch("^(?P<host>[[:alnum:].]+)$", 〈1;X〉)
+      host: 〈0;#components〉.host
+    }
+  }
+}

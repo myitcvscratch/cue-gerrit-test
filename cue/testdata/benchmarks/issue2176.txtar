@@ -1,0 +1,287 @@
+-- stats.txt --
+Leaks:  86
+Freed:  3303
+Reused: 3296
+Allocs: 93
+Retain: 525
+
+Unifications: 3381
+Conjuncts:    7871
+Disjuncts:    3820
+
+-- in.cue --
+import (
+	"strings"
+	"strconv"
+	"list"
+)
+
+#Datastream: {
+	message: string
+	message: strings.MinRunes(4)
+
+	marker: {
+		length: int
+		position: {
+			let characters = strings.Split(message, "")
+			let unique_combinations = {
+				// begin computation once we have more than x number of characters.
+				for i, _ in characters if i >= length-1 {
+					// this line is causing an increased evaluation time between cue versions.
+					// vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+					let combination = list.Slice(characters, i-length+1, i+1)
+
+					// last x number of characters are not unique.
+					if list.UniqueItems(list.Slice(characters, i-length+1, i+1)) {
+						"\(i+1)": combination
+					}
+				}
+			}
+			[ for i, _ in unique_combinations {i}][0]
+		}
+	}
+}
+
+input_short: """
+	mjqjpqmgbljsphdztnvjfqwrcgsmlb
+	"""
+input_long: """
+	qfmfhmhjmjggwbbvdvwvlvrrtsrsccwsslvlffjrrtprprjjvmmclmmghhddpvddclctcqtccgbgdbgdgsdgghqhtqtvvptvppwrwprpvrrrhpphththvhhrnnhnlnslnlhnhnhgnhnpnqqsmsgsllprlprrlzzqzffmzztctbtnbtthlttqvqcqmcmpcpbbczzbqbgghcghchhvwvllfrfnnbssfzsszpsplpglpprnpnfnbnhbnbtbzzvbvpbbhjjlzzbtbvbppczppbwppqwwnwlwccglgvgrgmmdwmwrmrppnfnhhhhqthqthqqrhrshhhqbhqqjgjvjllzvzbzhbbpttjsszvzqqtzzmbmddpldpdcdnccrmcrmmpwprplrrqssvddmpdmmwfwwlrljrrdsssmhsspnpffjggqllnzlnlhnnmddfrfpfbbvssjsrrznngcghgchcmhmrrrtzztjzzhchssslsmlmvvpwpqpjqjdddmsdmmtgtmgtglttfbbgrrcprrqffmmjnjttcmczzgbzggthhsttpggrmmgwwnpnqnqvnqvqppmlpmlpmpjpljljmmtpptfppfrppfdpfdppddmdttgzgzzdbzdzhzhnnsqssvmvbbpjjzwwvnwvvzmvzmzpmpttvrvccqddpgdppgmmthmthtggsfsbbvfbvfvhfvhvvpwpddqrqgqhghnnfmfbbwrbrgbgbvgbbdttffrddqbqpqzzmttlhhsqhsqhsqhhlplttpnpsstpthhpfhpfplprrgfrgffjppghgppghgdggjmmcgmccjvvsrvsrrwgrgmrrngrgttvbtbltthrthrttmfffjpfpssncnrngrrltrltlggjgcgllrzzllhwwjwrwgrgsrgrhrphrhhqwqsqmqlmqlmqmqrmrnnwnhwnhwhzwzjwwgbghhsjspszsznzfztfzfpzzlczztctsstctqtfqfqcfqqjrjccttmqqfpfdfnfwnffqbfbblpbpfpcfcwfccblbwwmqwqrrgprpccngnhghpppwmpplcppfrfjjgmmbzbhbcbzzgdgsdsvvqllzlppnfnlnlslsljlppcscqqfjjjwzwppfgfjjsvvsggjbjljpjpzjzrzjrzzfnfpnfpnfpnfnsnggmpggdllpmmrhhdqqppttgqqcsqsjsbjsjrsrqrbqqmbmcbmcbmbfmfvfqqdbdppmrprnrggmjjhnhbhdhbbfcbbcjjdhhwjwmjmssjswscswcwzccbgbqqmqgmmsdsjsbsdbsddvttjpppcqpcqcgqqslqsssczszrzvvrtvvjppswwhnnwlwtwhhwwzfwwpfpddlvvnvnnvlnntjtqjqjzzjttvvbqbhqbhbbbwnwhnwnppdbpdpvddrqdqjjlvlqqdfdhdjhdjdcjcrcjjggfmfvvfllvfvgglzllmhmzmdddfwddqjjqjfqfcfrrstrssptsstllrflfwwgswslwlbwbwjjvhvfvhfhffhsslwsllbnbblccbwwjqwqqdllrdrnrnffcbbqqpnqqdmdndtntvvrjvvsvmvgvnnmjlwgnjcwljgwnrwpqlztwrpmpgqtwlhrcwsrrhqhjhznrtpqfdnzbfqrzwslptdbdcnqvcllpjsfdvmzqwvzbpnmfcfcjnbmhtwhttjgtnczwctpdthhwmzvzrrgsnmbflgmszgsbvghbzgcmcmszgsbfmlmpbdspqlftmqrcjtmvgcrzznlfwjcbmddplsqrfflqnqfsldwhnncczdmfrrrsbjjqsdzrsgbdbwjbslfcqglsqfddhdsrcdrgqfqthgmfjvnfdfgdncfzpvqcpscnpmfgvqbfwszwzgmqvmcrdrwplfshdgqrchmccpqfznbmfvlhdpctlqgjslrwhjfjlmqfblgjrdlnzdtwlpwhnrhrcrpfwqpmjlgrdbgpbljntmbqlblqqqpgrnjtmjqvjpzvsqdpgtchmmwbhtmgcjqdplrtptqcvdjjpqdzsrcjhcwvdcghlwrdhtdfctmqfcjcqhcvvbzgsvlggcrdgqbtznwwmnbgsfrjprqgcmlswftlwpqqqvshdprldrsghmhrqvmqmvglbvzpvtrjbhcvhqmvdtcvsllznqzjmhpnlbhmlzthbwwhhvdtcdfdcdzhnbsrnqqjvzzsvfjhbsdlsbdlqjnlpnhfcjtdppzmphghltztzcdvzwbftbvwhvgmrllqfzrpbltptdtjjqtfwjfmczzgdvclqbsbftgtlhnhrrvbpvdltstdnhqvpvtjhmghptvsfnlspslmfsftzdrwljrgblgmcbmlszmhnlfdtmsrnjqwrfmsnfgpcqgzmlwppffrmbvhnlstfpgzw
+	"""
+
+input: *input_short | input_long
+
+datastream: #Datastream & {message: input}
+
+output: [string]: string
+output: {
+	"1": (datastream & {marker: length: 4}).marker.position
+	"2": (datastream & {marker: length: 14}).marker.position
+}
+-- out/eval/stats --
+Leaks:  218
+Freed:  5799
+Reused: 5795
+Allocs: 222
+Retain: 1915
+
+Unifications: 6009
+Conjuncts:    14515
+Disjuncts:    6868
+-- out/eval --
+(struct){
+  #Datastream: (#struct){
+    message: (string){ strings.MinRunes(4) }
+    marker: (#struct){
+      length: (int){ int }
+      position: (_|_){
+        // [incomplete] #Datastream.marker.position.characters: error in call to strings.Split: non-concrete value string:
+        //     ./in.cue:14:21
+        //     ./in.cue:9:11
+        let characters#1 = (_|_){
+          // [incomplete] #Datastream.marker.position.characters: error in call to strings.Split: non-concrete value string:
+          //     ./in.cue:14:21
+          //     ./in.cue:9:11
+        }
+        let unique_combinations#2multi = {
+          for i, _ in 〈1;let characters#1〉 if (〈0;i〉 >= (〈3;length〉 - 1)) {
+            let combination#3multi = 〈import;list〉.Slice(〈3;let characters#1〉, ((〈1;i〉 - 〈4;length〉) + 1), (〈1;i〉 + 1))
+            if 〈import;list〉.UniqueItems(〈import;list〉.Slice(〈3;let characters#1〉, ((〈1;i〉 - 〈4;length〉) + 1), (〈1;i〉 + 1))) {
+              "\((〈2;i〉 + 1))": 〈1;let combination#3〉
+            }
+          }
+        }
+      }
+    }
+  }
+  input_short: (string){ "mjqjpqmgbljsphdztnvjfqwrcgsmlb" }
+  input_long: (string){ "qfmfhmhjmjggwbbvdvwvlvrrtsrsccwsslvlffjrrtprprjjvmmclmmghhddpvddclctcqtccgbgdbgdgsdgghqhtqtvvptvppwrwprpvrrrhpphththvhhrnnhnlnslnlhnhnhgnhnpnqqsmsgsllprlprrlzzqzffmzztctbtnbtthlttqvqcqmcmpcpbbczzbqbgghcghchhvwvllfrfnnbssfzsszpsplpglpprnpnfnbnhbnbtbzzvbvpbbhjjlzzbtbvbppczppbwppqwwnwlwccglgvgrgmmdwmwrmrppnfnhhhhqthqthqqrhrshhhqbhqqjgjvjllzvzbzhbbpttjsszvzqqtzzmbmddpldpdcdnccrmcrmmpwprplrrqssvddmpdmmwfwwlrljrrdsssmhsspnpffjggqllnzlnlhnnmddfrfpfbbvssjsrrznngcghgchcmhmrrrtzztjzzhchssslsmlmvvpwpqpjqjdddmsdmmtgtmgtglttfbbgrrcprrqffmmjnjttcmczzgbzggthhsttpggrmmgwwnpnqnqvnqvqppmlpmlpmpjpljljmmtpptfppfrppfdpfdppddmdttgzgzzdbzdzhzhnnsqssvmvbbpjjzwwvnwvvzmvzmzpmpttvrvccqddpgdppgmmthmthtggsfsbbvfbvfvhfvhvvpwpddqrqgqhghnnfmfbbwrbrgbgbvgbbdttffrddqbqpqzzmttlhhsqhsqhsqhhlplttpnpsstpthhpfhpfplprrgfrgffjppghgppghgdggjmmcgmccjvvsrvsrrwgrgmrrngrgttvbtbltthrthrttmfffjpfpssncnrngrrltrltlggjgcgllrzzllhwwjwrwgrgsrgrhrphrhhqwqsqmqlmqlmqmqrmrnnwnhwnhwhzwzjwwgbghhsjspszsznzfztfzfpzzlczztctsstctqtfqfqcfqqjrjccttmqqfpfdfnfwnffqbfbblpbpfpcfcwfccblbwwmqwqrrgprpccngnhghpppwmpplcppfrfjjgmmbzbhbcbzzgdgsdsvvqllzlppnfnlnlslsljlppcscqqfjjjwzwppfgfjjsvvsggjbjljpjpzjzrzjrzzfnfpnfpnfpnfnsnggmpggdllpmmrhhdqqppttgqqcsqsjsbjsjrsrqrbqqmbmcbmcbmbfmfvfqqdbdppmrprnrggmjjhnhbhdhbbfcbbcjjdhhwjwmjmssjswscswcwzccbgbqqmqgmmsdsjsbsdbsddvttjpppcqpcqcgqqslqsssczszrzvvrtvvjppswwhnnwlwtwhhwwzfwwpfpddlvvnvnnvlnntjtqjqjzzjttvvbqbhqbhbbbwnwhnwnppdbpdpvddrqdqjjlvlqqdfdhdjhdjdcjcrcjjggfmfvvfllvfvgglzllmhmzmdddfwddqjjqjfqfcfrrstrssptsstllrflfwwgswslwlbwbwjjvhvfvhfhffhsslwsllbnbblccbwwjqwqqdllrdrnrnffcbbqqpnqqdmdndtntvvrjvvsvmvgvnnmjlwgnjcwljgwnrwpqlztwrpmpgqtwlhrcwsrrhqhjhznrtpqfdnzbfqrzwslptdbdcnqvcllpjsfdvmzqwvzbpnmfcfcjnbmhtwhttjgtnczwctpdthhwmzvzrrgsnmbflgmszgsbvghbzgcmcmszgsbfmlmpbdspqlftmqrcjtmvgcrzznlfwjcbmddplsqrfflqnqfsldwhnncczdmfrrrsbjjqsdzrsgbdbwjbslfcqglsqfddhdsrcdrgqfqthgmfjvnfdfgdncfzpvqcpscnpmfgvqbfwszwzgmqvmcrdrwplfshdgqrchmccpqfznbmfvlhdpctlqgjslrwhjfjlmqfblgjrdlnzdtwlpwhnrhrcrpfwqpmjlgrdbgpbljntmbqlblqqqpgrnjtmjqvjpzvsqdpgtchmmwbhtmgcjqdplrtptqcvdjjpqdzsrcjhcwvdcghlwrdhtdfctmqfcjcqhcvvbzgsvlggcrdgqbtznwwmnbgsfrjprqgcmlswftlwpqqqvshdprldrsghmhrqvmqmvglbvzpvtrjbhcvhqmvdtcvsllznqzjmhpnlbhmlzthbwwhhvdtcdfdcdzhnbsrnqqjvzzsvfjhbsdlsbdlqjnlpnhfcjtdppzmphghltztzcdvzwbftbvwhvgmrllqfzrpbltptdtjjqtfwjfmczzgdvclqbsbftgtlhnhrrvbpvdltstdnhqvpvtjhmghptvsfnlspslmfsftzdrwljrgblgmcbmlszmhnlfdtmsrnjqwrfmsnfgpcqgzmlwppffrmbvhnlstfpgzw" }
+  input: (string){ |(*(string){ "mjqjpqmgbljsphdztnvjfqwrcgsmlb" }, (string){ "qfmfhmhjmjggwbbvdvwvlvrrtsrsccwsslvlffjrrtprprjjvmmclmmghhddpvddclctcqtccgbgdbgdgsdgghqhtqtvvptvppwrwprpvrrrhpphththvhhrnnhnlnslnlhnhnhgnhnpnqqsmsgsllprlprrlzzqzffmzztctbtnbtthlttqvqcqmcmpcpbbczzbqbgghcghchhvwvllfrfnnbssfzsszpsplpglpprnpnfnbnhbnbtbzzvbvpbbhjjlzzbtbvbppczppbwppqwwnwlwccglgvgrgmmdwmwrmrppnfnhhhhqthqthqqrhrshhhqbhqqjgjvjllzvzbzhbbpttjsszvzqqtzzmbmddpldpdcdnccrmcrmmpwprplrrqssvddmpdmmwfwwlrljrrdsssmhsspnpffjggqllnzlnlhnnmddfrfpfbbvssjsrrznngcghgchcmhmrrrtzztjzzhchssslsmlmvvpwpqpjqjdddmsdmmtgtmgtglttfbbgrrcprrqffmmjnjttcmczzgbzggthhsttpggrmmgwwnpnqnqvnqvqppmlpmlpmpjpljljmmtpptfppfrppfdpfdppddmdttgzgzzdbzdzhzhnnsqssvmvbbpjjzwwvnwvvzmvzmzpmpttvrvccqddpgdppgmmthmthtggsfsbbvfbvfvhfvhvvpwpddqrqgqhghnnfmfbbwrbrgbgbvgbbdttffrddqbqpqzzmttlhhsqhsqhsqhhlplttpnpsstpthhpfhpfplprrgfrgffjppghgppghgdggjmmcgmccjvvsrvsrrwgrgmrrngrgttvbtbltthrthrttmfffjpfpssncnrngrrltrltlggjgcgllrzzllhwwjwrwgrgsrgrhrphrhhqwqsqmqlmqlmqmqrmrnnwnhwnhwhzwzjwwgbghhsjspszsznzfztfzfpzzlczztctsstctqtfqfqcfqqjrjccttmqqfpfdfnfwnffqbfbblpbpfpcfcwfccblbwwmqwqrrgprpccngnhghpppwmpplcppfrfjjgmmbzbhbcbzzgdgsdsvvqllzlppnfnlnlslsljlppcscqqfjjjwzwppfgfjjsvvsggjbjljpjpzjzrzjrzzfnfpnfpnfpnfnsnggmpggdllpmmrhhdqqppttgqqcsqsjsbjsjrsrqrbqqmbmcbmcbmbfmfvfqqdbdppmrprnrggmjjhnhbhdhbbfcbbcjjdhhwjwmjmssjswscswcwzccbgbqqmqgmmsdsjsbsdbsddvttjpppcqpcqcgqqslqsssczszrzvvrtvvjppswwhnnwlwtwhhwwzfwwpfpddlvvnvnnvlnntjtqjqjzzjttvvbqbhqbhbbbwnwhnwnppdbpdpvddrqdqjjlvlqqdfdhdjhdjdcjcrcjjggfmfvvfllvfvgglzllmhmzmdddfwddqjjqjfqfcfrrstrssptsstllrflfwwgswslwlbwbwjjvhvfvhfhffhsslwsllbnbblccbwwjqwqqdllrdrnrnffcbbqqpnqqdmdndtntvvrjvvsvmvgvnnmjlwgnjcwljgwnrwpqlztwrpmpgqtwlhrcwsrrhqhjhznrtpqfdnzbfqrzwslptdbdcnqvcllpjsfdvmzqwvzbpnmfcfcjnbmhtwhttjgtnczwctpdthhwmzvzrrgsnmbflgmszgsbvghbzgcmcmszgsbfmlmpbdspqlftmqrcjtmvgcrzznlfwjcbmddplsqrfflqnqfsldwhnncczdmfrrrsbjjqsdzrsgbdbwjbslfcqglsqfddhdsrcdrgqfqthgmfjvnfdfgdncfzpvqcpscnpmfgvqbfwszwzgmqvmcrdrwplfshdgqrchmccpqfznbmfvlhdpctlqgjslrwhjfjlmqfblgjrdlnzdtwlpwhnrhrcrpfwqpmjlgrdbgpbljntmbqlblqqqpgrnjtmjqvjpzvsqdpgtchmmwbhtmgcjqdplrtptqcvdjjpqdzsrcjhcwvdcghlwrdhtdfctmqfcjcqhcvvbzgsvlggcrdgqbtznwwmnbgsfrjprqgcmlswftlwpqqqvshdprldrsghmhrqvmqmvglbvzpvtrjbhcvhqmvdtcvsllznqzjmhpnlbhmlzthbwwhhvdtcdfdcdzhnbsrnqqjvzzsvfjhbsdlsbdlqjnlpnhfcjtdppzmphghltztzcdvzwbftbvwhvgmrllqfzrpbltptdtjjqtfwjfmczzgdvclqbsbftgtlhnhrrvbpvdltstdnhqvpvtjhmghptvsfnlspslmfsftzdrwljrgblgmcbmlszmhnlfdtmsrnjqwrfmsnfgpcqgzmlwppffrmbvhnlstfpgzw" }) }
+  datastream: (#struct){
+    message: (string){ |(*(string){ "mjqjpqmgbljsphdztnvjfqwrcgsmlb" }, (string){ "qfmfhmhjmjggwbbvdvwvlvrrtsrsccwsslvlffjrrtprprjjvmmclmmghhddpvddclctcqtccgbgdbgdgsdgghqhtqtvvptvppwrwprpvrrrhpphththvhhrnnhnlnslnlhnhnhgnhnpnqqsmsgsllprlprrlzzqzffmzztctbtnbtthlttqvqcqmcmpcpbbczzbqbgghcghchhvwvllfrfnnbssfzsszpsplpglpprnpnfnbnhbnbtbzzvbvpbbhjjlzzbtbvbppczppbwppqwwnwlwccglgvgrgmmdwmwrmrppnfnhhhhqthqthqqrhrshhhqbhqqjgjvjllzvzbzhbbpttjsszvzqqtzzmbmddpldpdcdnccrmcrmmpwprplrrqssvddmpdmmwfwwlrljrrdsssmhsspnpffjggqllnzlnlhnnmddfrfpfbbvssjsrrznngcghgchcmhmrrrtzztjzzhchssslsmlmvvpwpqpjqjdddmsdmmtgtmgtglttfbbgrrcprrqffmmjnjttcmczzgbzggthhsttpggrmmgwwnpnqnqvnqvqppmlpmlpmpjpljljmmtpptfppfrppfdpfdppddmdttgzgzzdbzdzhzhnnsqssvmvbbpjjzwwvnwvvzmvzmzpmpttvrvccqddpgdppgmmthmthtggsfsbbvfbvfvhfvhvvpwpddqrqgqhghnnfmfbbwrbrgbgbvgbbdttffrddqbqpqzzmttlhhsqhsqhsqhhlplttpnpsstpthhpfhpfplprrgfrgffjppghgppghgdggjmmcgmccjvvsrvsrrwgrgmrrngrgttvbtbltthrthrttmfffjpfpssncnrngrrltrltlggjgcgllrzzllhwwjwrwgrgsrgrhrphrhhqwqsqmqlmqlmqmqrmrnnwnhwnhwhzwzjwwgbghhsjspszsznzfztfzfpzzlczztctsstctqtfqfqcfqqjrjccttmqqfpfdfnfwnffqbfbblpbpfpcfcwfccblbwwmqwqrrgprpccngnhghpppwmpplcppfrfjjgmmbzbhbcbzzgdgsdsvvqllzlppnfnlnlslsljlppcscqqfjjjwzwppfgfjjsvvsggjbjljpjpzjzrzjrzzfnfpnfpnfpnfnsnggmpggdllpmmrhhdqqppttgqqcsqsjsbjsjrsrqrbqqmbmcbmcbmbfmfvfqqdbdppmrprnrggmjjhnhbhdhbbfcbbcjjdhhwjwmjmssjswscswcwzccbgbqqmqgmmsdsjsbsdbsddvttjpppcqpcqcgqqslqsssczszrzvvrtvvjppswwhnnwlwtwhhwwzfwwpfpddlvvnvnnvlnntjtqjqjzzjttvvbqbhqbhbbbwnwhnwnppdbpdpvddrqdqjjlvlqqdfdhdjhdjdcjcrcjjggfmfvvfllvfvgglzllmhmzmdddfwddqjjqjfqfcfrrstrssptsstllrflfwwgswslwlbwbwjjvhvfvhfhffhsslwsllbnbblccbwwjqwqqdllrdrnrnffcbbqqpnqqdmdndtntvvrjvvsvmvgvnnmjlwgnjcwljgwnrwpqlztwrpmpgqtwlhrcwsrrhqhjhznrtpqfdnzbfqrzwslptdbdcnqvcllpjsfdvmzqwvzbpnmfcfcjnbmhtwhttjgtnczwctpdthhwmzvzrrgsnmbflgmszgsbvghbzgcmcmszgsbfmlmpbdspqlftmqrcjtmvgcrzznlfwjcbmddplsqrfflqnqfsldwhnncczdmfrrrsbjjqsdzrsgbdbwjbslfcqglsqfddhdsrcdrgqfqthgmfjvnfdfgdncfzpvqcpscnpmfgvqbfwszwzgmqvmcrdrwplfshdgqrchmccpqfznbmfvlhdpctlqgjslrwhjfjlmqfblgjrdlnzdtwlpwhnrhrcrpfwqpmjlgrdbgpbljntmbqlblqqqpgrnjtmjqvjpzvsqdpgtchmmwbhtmgcjqdplrtptqcvdjjpqdzsrcjhcwvdcghlwrdhtdfctmqfcjcqhcvvbzgsvlggcrdgqbtznwwmnbgsfrjprqgcmlswftlwpqqqvshdprldrsghmhrqvmqmvglbvzpvtrjbhcvhqmvdtcvsllznqzjmhpnlbhmlzthbwwhhvdtcdfdcdzhnbsrnqqjvzzsvfjhbsdlsbdlqjnlpnhfcjtdppzmphghltztzcdvzwbftbvwhvgmrllqfzrpbltptdtjjqtfwjfmczzgdvclqbsbftgtlhnhrrvbpvdltstdnhqvpvtjhmghptvsfnlspslmfsftzdrwljrgblgmcbmlszmhnlfdtmsrnjqwrfmsnfgpcqgzmlwppffrmbvhnlstfpgzw" }) }
+    marker: (#struct){
+      length: (int){ int }
+      position: (_|_){
+        // [incomplete] datastream.marker.position.unique_combinations: non-concrete value int in operand to -:
+        //     ./in.cue:17:36
+        //     ./in.cue:12:11
+        let characters#1 = (#list){
+          0: (string){ "m" }
+          1: (string){ "j" }
+          2: (string){ "q" }
+          3: (string){ "j" }
+          4: (string){ "p" }
+          5: (string){ "q" }
+          6: (string){ "m" }
+          7: (string){ "g" }
+          8: (string){ "b" }
+          9: (string){ "l" }
+          10: (string){ "j" }
+          11: (string){ "s" }
+          12: (string){ "p" }
+          13: (string){ "h" }
+          14: (string){ "d" }
+          15: (string){ "z" }
+          16: (string){ "t" }
+          17: (string){ "n" }
+          18: (string){ "v" }
+          19: (string){ "j" }
+          20: (string){ "f" }
+          21: (string){ "q" }
+          22: (string){ "w" }
+          23: (string){ "r" }
+          24: (string){ "c" }
+          25: (string){ "g" }
+          26: (string){ "s" }
+          27: (string){ "m" }
+          28: (string){ "l" }
+          29: (string){ "b" }
+        }
+        let unique_combinations#2multi = {
+          for i, _ in 〈1;let characters#1〉 if (〈0;i〉 >= (〈3;length〉 - 1)) {
+            let combination#3multi = 〈import;list〉.Slice(〈3;let characters#1〉, ((〈1;i〉 - 〈4;length〉) + 1), (〈1;i〉 + 1))
+            if 〈import;list〉.UniqueItems(〈import;list〉.Slice(〈3;let characters#1〉, ((〈1;i〉 - 〈4;length〉) + 1), (〈1;i〉 + 1))) {
+              "\((〈2;i〉 + 1))": 〈1;let combination#3〉
+            }
+          }
+        }
+      }
+    }
+  }
+  output: (struct){
+    "1": (string){
+      "7"
+      let characters#1 = (#list){
+        0: (string){ "m" }
+        1: (string){ "j" }
+        2: (string){ "q" }
+        3: (string){ "j" }
+        4: (string){ "p" }
+        5: (string){ "q" }
+        6: (string){ "m" }
+        7: (string){ "g" }
+        8: (string){ "b" }
+        9: (string){ "l" }
+        10: (string){ "j" }
+        11: (string){ "s" }
+        12: (string){ "p" }
+        13: (string){ "h" }
+        14: (string){ "d" }
+        15: (string){ "z" }
+        16: (string){ "t" }
+        17: (string){ "n" }
+        18: (string){ "v" }
+        19: (string){ "j" }
+        20: (string){ "f" }
+        21: (string){ "q" }
+        22: (string){ "w" }
+        23: (string){ "r" }
+        24: (string){ "c" }
+        25: (string){ "g" }
+        26: (string){ "s" }
+        27: (string){ "m" }
+        28: (string){ "l" }
+        29: (string){ "b" }
+      }
+      let unique_combinations#2multi = {
+        for i, _ in 〈1;let characters#1〉 if (〈0;i〉 >= (〈3;length〉 - 1)) {
+          let combination#3multi = 〈import;list〉.Slice(〈3;let characters#1〉, ((〈1;i〉 - 〈4;length〉) + 1), (〈1;i〉 + 1))
+          if 〈import;list〉.UniqueItems(〈import;list〉.Slice(〈3;let characters#1〉, ((〈1;i〉 - 〈4;length〉) + 1), (〈1;i〉 + 1))) {
+            "\((〈2;i〉 + 1))": 〈1;let combination#3〉
+          }
+        }
+      }
+    }
+    "2": (string){
+      "19"
+      let characters#1 = (#list){
+        0: (string){ "m" }
+        1: (string){ "j" }
+        2: (string){ "q" }
+        3: (string){ "j" }
+        4: (string){ "p" }
+        5: (string){ "q" }
+        6: (string){ "m" }
+        7: (string){ "g" }
+        8: (string){ "b" }
+        9: (string){ "l" }
+        10: (string){ "j" }
+        11: (string){ "s" }
+        12: (string){ "p" }
+        13: (string){ "h" }
+        14: (string){ "d" }
+        15: (string){ "z" }
+        16: (string){ "t" }
+        17: (string){ "n" }
+        18: (string){ "v" }
+        19: (string){ "j" }
+        20: (string){ "f" }
+        21: (string){ "q" }
+        22: (string){ "w" }
+        23: (string){ "r" }
+        24: (string){ "c" }
+        25: (string){ "g" }
+        26: (string){ "s" }
+        27: (string){ "m" }
+        28: (string){ "l" }
+        29: (string){ "b" }
+      }
+      let unique_combinations#2multi = {
+        for i, _ in 〈1;let characters#1〉 if (〈0;i〉 >= (〈3;length〉 - 1)) {
+          let combination#3multi = 〈import;list〉.Slice(〈3;let characters#1〉, ((〈1;i〉 - 〈4;length〉) + 1), (〈1;i〉 + 1))
+          if 〈import;list〉.UniqueItems(〈import;list〉.Slice(〈3;let characters#1〉, ((〈1;i〉 - 〈4;length〉) + 1), (〈1;i〉 + 1))) {
+            "\((〈2;i〉 + 1))": 〈1;let combination#3〉
+          }
+        }
+      }
+    }
+  }
+}
+-- out/compile --
+--- in.cue
+{
+  #Datastream: {
+    message: string
+    message: 〈import;strings〉.MinRunes(4)
+    marker: {
+      length: int
+      position: {
+        let characters#1 = 〈import;strings〉.Split(〈2;message〉, "")
+        let unique_combinations#2multi = {
+          for i, _ in 〈1;let characters#1〉 if (〈0;i〉 >= (〈3;length〉 - 1)) {
+            let combination#3multi = 〈import;list〉.Slice(〈3;let characters#1〉, ((〈1;i〉 - 〈4;length〉) + 1), (〈1;i〉 + 1))
+            if 〈import;list〉.UniqueItems(〈import;list〉.Slice(〈3;let characters#1〉, ((〈1;i〉 - 〈4;length〉) + 1), (〈1;i〉 + 1))) {
+              "\((〈2;i〉 + 1))": 〈1;let combination#3〉
+            }
+          }
+        }
+        [
+          for i, _ in 〈1;let unique_combinations#2〉 {
+            〈1;i〉
+          },
+        ][0]
+      }
+    }
+  }
+  input_short: "mjqjpqmgbljsphdztnvjfqwrcgsmlb"
+  input_long: "qfmfhmhjmjggwbbvdvwvlvrrtsrsccwsslvlffjrrtprprjjvmmclmmghhddpvddclctcqtccgbgdbgdgsdgghqhtqtvvptvppwrwprpvrrrhpphththvhhrnnhnlnslnlhnhnhgnhnpnqqsmsgsllprlprrlzzqzffmzztctbtnbtthlttqvqcqmcmpcpbbczzbqbgghcghchhvwvllfrfnnbssfzsszpsplpglpprnpnfnbnhbnbtbzzvbvpbbhjjlzzbtbvbppczppbwppqwwnwlwccglgvgrgmmdwmwrmrppnfnhhhhqthqthqqrhrshhhqbhqqjgjvjllzvzbzhbbpttjsszvzqqtzzmbmddpldpdcdnccrmcrmmpwprplrrqssvddmpdmmwfwwlrljrrdsssmhsspnpffjggqllnzlnlhnnmddfrfpfbbvssjsrrznngcghgchcmhmrrrtzztjzzhchssslsmlmvvpwpqpjqjdddmsdmmtgtmgtglttfbbgrrcprrqffmmjnjttcmczzgbzggthhsttpggrmmgwwnpnqnqvnqvqppmlpmlpmpjpljljmmtpptfppfrppfdpfdppddmdttgzgzzdbzdzhzhnnsqssvmvbbpjjzwwvnwvvzmvzmzpmpttvrvccqddpgdppgmmthmthtggsfsbbvfbvfvhfvhvvpwpddqrqgqhghnnfmfbbwrbrgbgbvgbbdttffrddqbqpqzzmttlhhsqhsqhsqhhlplttpnpsstpthhpfhpfplprrgfrgffjppghgppghgdggjmmcgmccjvvsrvsrrwgrgmrrngrgttvbtbltthrthrttmfffjpfpssncnrngrrltrltlggjgcgllrzzllhwwjwrwgrgsrgrhrphrhhqwqsqmqlmqlmqmqrmrnnwnhwnhwhzwzjwwgbghhsjspszsznzfztfzfpzzlczztctsstctqtfqfqcfqqjrjccttmqqfpfdfnfwnffqbfbblpbpfpcfcwfccblbwwmqwqrrgprpccngnhghpppwmpplcppfrfjjgmmbzbhbcbzzgdgsdsvvqllzlppnfnlnlslsljlppcscqqfjjjwzwppfgfjjsvvsggjbjljpjpzjzrzjrzzfnfpnfpnfpnfnsnggmpggdllpmmrhhdqqppttgqqcsqsjsbjsjrsrqrbqqmbmcbmcbmbfmfvfqqdbdppmrprnrggmjjhnhbhdhbbfcbbcjjdhhwjwmjmssjswscswcwzccbgbqqmqgmmsdsjsbsdbsddvttjpppcqpcqcgqqslqsssczszrzvvrtvvjppswwhnnwlwtwhhwwzfwwpfpddlvvnvnnvlnntjtqjqjzzjttvvbqbhqbhbbbwnwhnwnppdbpdpvddrqdqjjlvlqqdfdhdjhdjdcjcrcjjggfmfvvfllvfvgglzllmhmzmdddfwddqjjqjfqfcfrrstrssptsstllrflfwwgswslwlbwbwjjvhvfvhfhffhsslwsllbnbblccbwwjqwqqdllrdrnrnffcbbqqpnqqdmdndtntvvrjvvsvmvgvnnmjlwgnjcwljgwnrwpqlztwrpmpgqtwlhrcwsrrhqhjhznrtpqfdnzbfqrzwslptdbdcnqvcllpjsfdvmzqwvzbpnmfcfcjnbmhtwhttjgtnczwctpdthhwmzvzrrgsnmbflgmszgsbvghbzgcmcmszgsbfmlmpbdspqlftmqrcjtmvgcrzznlfwjcbmddplsqrfflqnqfsldwhnncczdmfrrrsbjjqsdzrsgbdbwjbslfcqglsqfddhdsrcdrgqfqthgmfjvnfdfgdncfzpvqcpscnpmfgvqbfwszwzgmqvmcrdrwplfshdgqrchmccpqfznbmfvlhdpctlqgjslrwhjfjlmqfblgjrdlnzdtwlpwhnrhrcrpfwqpmjlgrdbgpbljntmbqlblqqqpgrnjtmjqvjpzvsqdpgtchmmwbhtmgcjqdplrtptqcvdjjpqdzsrcjhcwvdcghlwrdhtdfctmqfcjcqhcvvbzgsvlggcrdgqbtznwwmnbgsfrjprqgcmlswftlwpqqqvshdprldrsghmhrqvmqmvglbvzpvtrjbhcvhqmvdtcvsllznqzjmhpnlbhmlzthbwwhhvdtcdfdcdzhnbsrnqqjvzzsvfjhbsdlsbdlqjnlpnhfcjtdppzmphghltztzcdvzwbftbvwhvgmrllqfzrpbltptdtjjqtfwjfmczzgdvclqbsbftgtlhnhrrvbpvdltstdnhqvpvtjhmghptvsfnlspslmfsftzdrwljrgblgmcbmlszmhnlfdtmsrnjqwrfmsnfgpcqgzmlwppffrmbvhnlstfpgzw"
+  input: (*〈0;input_short〉|〈0;input_long〉)
+  datastream: (〈0;#Datastream〉 & {
+    message: 〈1;input〉
+  })
+  output: {
+    [string]: string
+  }
+  output: {
+    "1": (〈1;datastream〉 & {
+      marker: {
+        length: 4
+      }
+    }).marker.position
+    "2": (〈1;datastream〉 & {
+      marker: {
+        length: 14
+      }
+    }).marker.position
+  }
+}

@@ -1,0 +1,42 @@
+-- cue.mod/module.cue --
+module: "mod.test"
+-- a.cue --
+package a
+
+import "mod.test/b"
+
+theb: b.name
+-- b/b.cue --
+package b
+
+import "mod.test/c"
+
+b: c.c & {
+	other: "name"
+}
+
+name: b.other
+-- c/c.cue --
+package c
+-- out/compile --
+--- a.cue
+{
+  theb: 〈import;"mod.test/b"〉.name
+}
+-- out/eval/stats --
+Leaks:  4
+Freed:  2
+Reused: 0
+Allocs: 6
+Retain: 24
+
+Unifications: 6
+Conjuncts:    27
+Disjuncts:    11
+-- out/eval --
+(struct){
+  theb: (_|_){
+    // [incomplete] b: undefined field: c:
+    //     ./b/b.cue:5:6
+  }
+}

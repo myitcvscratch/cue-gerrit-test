@@ -1,0 +1,287 @@
+-- in.cue --
+a: "foo"
+"\(a)": b: c: d: e
+e: 2
+
+b: "bar"
+X="\(b)": {
+	a: 1
+}
+c: X
+
+withError: {
+	issue799: {key: int32} & {"\(1 & 2)": 123}
+}
+
+parenExprRefParent: {
+	a: (x): {}
+	x: "foo"
+}
+parenExprRefEqual: {
+	(x): {}
+	x: "foo"
+}
+chainedResolution: {
+	p1: {
+		(p1.baz): "bar"
+		(p1.foo): "baz"
+		baz: "foo"
+	}
+	p2: {
+		(p2.baz): "bar"
+		baz: "foo"
+		(p2.foo): "baz"
+	}
+	p3: {
+		baz: "foo"
+		(p3.baz): "bar"
+		(p3.foo): "baz"
+	}
+	p4: {
+		(p4.foo): "baz"
+		(p4.baz): "bar"
+		baz: "foo"
+	}
+	p5: {
+		(p5.foo): "baz"
+		baz: "foo"
+		(p5.baz): "bar"
+	}
+	p6: {
+		baz: "foo"
+		(p6.foo): "baz"
+		(p6.baz): "bar"
+	}
+}
+
+// Issue #1407
+noCycleError: {
+	foo: [_]: {
+		#ID: "\(string)"
+	}
+	foo: bar: entries: (foo.baz.#ID): true
+	foo: baz: {}
+}
+
+-- constraints.cue --
+constraints: {
+	t1: "foo"
+	t2: "bar"
+	(t1)?: (t2)!: 3
+}
+
+-- out/eval/stats --
+Leaks:  2
+Freed:  59
+Reused: 52
+Allocs: 9
+Retain: 11
+
+Unifications: 61
+Conjuncts:    79
+Disjuncts:    66
+-- out/eval --
+Errors:
+invalid interpolation: conflicting values 2 and 1:
+    ./in.cue:12:28
+    ./in.cue:12:31
+    ./in.cue:12:35
+
+Result:
+(_|_){
+  // [eval]
+  constraints: (struct){
+    t1: (string){ "foo" }
+    t2: (string){ "bar" }
+    foo?: (struct){
+      bar!: (int){ 3 }
+    }
+  }
+  a: (string){ "foo" }
+  e: (int){ 2 }
+  b: (string){ "bar" }
+  c: (struct){
+    a: (int){ 1 }
+  }
+  withError: (_|_){
+    // [eval]
+    issue799: (_|_){
+      // [eval] invalid interpolation: conflicting values 2 and 1:
+      //     ./in.cue:12:28
+      //     ./in.cue:12:31
+      //     ./in.cue:12:35
+      key: (int){ &(>=-2147483648, <=2147483647, int) }
+    }
+  }
+  parenExprRefParent: (struct){
+    a: (struct){
+      foo: (struct){
+      }
+    }
+    x: (string){ "foo" }
+  }
+  parenExprRefEqual: (struct){
+    x: (string){ "foo" }
+    foo: (struct){
+    }
+  }
+  chainedResolution: (struct){
+    p1: (struct){
+      baz: (string){ "foo" }
+      foo: (string){ "bar" }
+      bar: (string){ "baz" }
+    }
+    p2: (struct){
+      baz: (string){ "foo" }
+      foo: (string){ "bar" }
+      bar: (string){ "baz" }
+    }
+    p3: (struct){
+      baz: (string){ "foo" }
+      foo: (string){ "bar" }
+      bar: (string){ "baz" }
+    }
+    p4: (struct){
+      baz: (string){ "foo" }
+      foo: (string){ "bar" }
+      bar: (string){ "baz" }
+    }
+    p5: (struct){
+      baz: (string){ "foo" }
+      foo: (string){ "bar" }
+      bar: (string){ "baz" }
+    }
+    p6: (struct){
+      baz: (string){ "foo" }
+      foo: (string){ "bar" }
+      bar: (string){ "baz" }
+    }
+  }
+  noCycleError: (struct){
+    foo: (struct){
+      bar: (struct){
+        entries: (_|_){
+          // [incomplete] noCycleError.foo.baz.#ID: invalid interpolation: non-concrete value string (type string):
+          //     ./in.cue:59:8
+          //     ./in.cue:59:11
+        }
+        #ID: (_|_){
+          // [incomplete] noCycleError.foo.bar.#ID: invalid interpolation: non-concrete value string (type string):
+          //     ./in.cue:59:8
+          //     ./in.cue:59:11
+        }
+      }
+      baz: (struct){
+        #ID: (_|_){
+          // [incomplete] noCycleError.foo.baz.#ID: invalid interpolation: non-concrete value string (type string):
+          //     ./in.cue:59:8
+          //     ./in.cue:59:11
+        }
+      }
+    }
+  }
+  foo: (struct){
+    b: (struct){
+      c: (struct){
+        d: (int){ 2 }
+      }
+    }
+  }
+  bar: (struct){
+    a: (int){ 1 }
+  }
+}
+-- out/compile --
+--- constraints.cue
+{
+  constraints: {
+    t1: "foo"
+    t2: "bar"
+    〈0;t1〉?: {
+      〈1;t2〉!: 3
+    }
+  }
+}
+--- in.cue
+{
+  a: "foo"
+  "\(〈0;a〉)": {
+    b: {
+      c: {
+        d: 〈3;e〉
+      }
+    }
+  }
+  e: 2
+  b: "bar"
+  "\(〈0;b〉)": {
+    a: 1
+  }
+  c: 〈0;("\(〈0;b〉)")〉
+  withError: {
+    issue799: ({
+      key: &(int, >=-2147483648, <=2147483647)
+    } & {
+      "\((1 & 2))": 123
+    })
+  }
+  parenExprRefParent: {
+    a: {
+      〈1;x〉: {}
+    }
+    x: "foo"
+  }
+  parenExprRefEqual: {
+    〈0;x〉: {}
+    x: "foo"
+  }
+  chainedResolution: {
+    p1: {
+      〈1;p1〉.baz: "bar"
+      〈1;p1〉.foo: "baz"
+      baz: "foo"
+    }
+    p2: {
+      〈1;p2〉.baz: "bar"
+      baz: "foo"
+      〈1;p2〉.foo: "baz"
+    }
+    p3: {
+      baz: "foo"
+      〈1;p3〉.baz: "bar"
+      〈1;p3〉.foo: "baz"
+    }
+    p4: {
+      〈1;p4〉.foo: "baz"
+      〈1;p4〉.baz: "bar"
+      baz: "foo"
+    }
+    p5: {
+      〈1;p5〉.foo: "baz"
+      baz: "foo"
+      〈1;p5〉.baz: "bar"
+    }
+    p6: {
+      baz: "foo"
+      〈1;p6〉.foo: "baz"
+      〈1;p6〉.baz: "bar"
+    }
+  }
+  noCycleError: {
+    foo: {
+      [_]: {
+        #ID: "\(string)"
+      }
+    }
+    foo: {
+      bar: {
+        entries: {
+          〈3;foo〉.baz.#ID: true
+        }
+      }
+    }
+    foo: {
+      baz: {}
+    }
+  }
+}

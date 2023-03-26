@@ -1,0 +1,851 @@
+// Issues: #667, #695, #622
+-- in.cue --
+import (
+	"strconv"
+	"regexp"
+)
+
+// In these test, it is impossible to determine the existence of some arcs due
+// to mutual dependence on becoming concrete.
+//
+// This tests shows the essences of when an existence check cannot be resolved.
+minimal: {
+	a: {
+		if b.port == _|_ {
+			port: ""
+		}
+	}
+
+	b: {
+		if a.port == _|_ {
+			port: ""
+		}
+	}
+}
+
+small: {
+	#userHostPort: #"^(:(?P<port>\d+))?$"#
+
+	p1: {
+		#Y: regexp.FindNamedSubmatch(#userHostPort, #X.port)
+
+		#X: {
+			if #Y.port == _|_ {
+				port: ""
+			}
+			if #Y.port != _|_ {
+				port: ":" + strconv.FormatInt(#Y.port, 10)
+			}
+		}
+	}
+
+	p2: {
+		#X: {
+			if #Y.port == _|_ {
+				port: ""
+			}
+			if #Y.port != _|_ {
+				port: ":" + strconv.FormatInt(#Y.port, 10)
+			}
+		}
+
+		#Y: regexp.FindNamedSubmatch(#userHostPort, #X.port)
+	}
+}
+
+medium: {
+	#userHostPort: #"^(:(?P<port>\d+))?$"#
+
+	p1: {
+		#Y: regexp.FindNamedSubmatch(#userHostPort, #X.port)
+
+		Y: {
+			if #Y.port != _|_ {
+				port: strconv.Atoi(#Y.port)
+			}
+		}
+
+		#X: {
+			// Can never determine whether Y.port exists as its resolution
+			// depends on #Y becoming finalized, which, in turn, depends on #X
+			// becoming finalized.
+			if Y.port == _|_ {
+				port: ""
+			}
+			if Y.port != _|_ {
+				port: ":" + strconv.FormatInt(Y.port, 10)
+			}
+		}
+	}
+
+	p2: {
+		#Y: regexp.FindNamedSubmatch(#userHostPort, #X.port)
+
+		#X: {
+			// Can never determine whether Y.port exists as its resolution
+			// depends on #Y becoming finalized, which, in turn, depends on #X
+			// becoming finalized.
+			if Y.port == _|_ {
+				port: ""
+			}
+			if Y.port != _|_ {
+				port: ":" + strconv.FormatInt(Y.port, 10)
+			}
+		}
+
+		Y: {
+			if #Y.port != _|_ {
+				port: strconv.Atoi(#Y.port)
+			}
+		}
+	}
+
+	p3: {
+		Y: {
+			if #Y.port != _|_ {
+				port: strconv.Atoi(#Y.port)
+			}
+		}
+
+		#Y: regexp.FindNamedSubmatch(#userHostPort, #X.port)
+
+		#X: {
+			// Can never determine whether Y.port exists as its resolution
+			// depends on #Y becoming finalized, which, in turn, depends on #X
+			// becoming finalized.
+			if Y.port == _|_ {
+				port: ""
+			}
+			if Y.port != _|_ {
+				port: ":" + strconv.FormatInt(Y.port, 10)
+			}
+		}
+	}
+
+	p4: {
+		Y: {
+			if #Y.port != _|_ {
+				port: strconv.Atoi(#Y.port)
+			}
+		}
+
+		#X: {
+			// Can never determine whether Y.port exists as its resolution
+			// depends on #Y becoming finalized, which, in turn, depends on #X
+			// becoming finalized.
+			if Y.port == _|_ {
+				port: ""
+			}
+			if Y.port != _|_ {
+				port: ":" + strconv.FormatInt(Y.port, 10)
+			}
+		}
+
+		#Y: regexp.FindNamedSubmatch(#userHostPort, #X.port)
+	}
+
+	p5: {
+		#X: {
+			// Can never determine whether Y.port exists as its resolution
+			// depends on #Y becoming finalized, which, in turn, depends on #X
+			// becoming finalized.
+			if Y.port == _|_ {
+				port: ""
+			}
+			if Y.port != _|_ {
+				port: ":" + strconv.FormatInt(Y.port, 10)
+			}
+		}
+
+		#Y: regexp.FindNamedSubmatch(#userHostPort, #X.port)
+
+		Y: {
+			if #Y.port != _|_ {
+				port: strconv.Atoi(#Y.port)
+			}
+		}
+	}
+
+	p6: {
+		#X: {
+			// Can never determine whether Y.port exists as its resolution
+			// depends on #Y becoming finalized, which, in turn, depends on #X
+			// becoming finalized.
+			if Y.port == _|_ {
+				port: ""
+			}
+			if Y.port != _|_ {
+				port: ":" + strconv.FormatInt(Y.port, 10)
+			}
+		}
+
+		Y: {
+			if #Y.port != _|_ {
+				port: strconv.Atoi(#Y.port)
+			}
+		}
+
+		#Y: regexp.FindNamedSubmatch(#userHostPort, #X.port)
+	}
+}
+
+large: {
+	#userHostPort: #"^((?P<userinfo>[[:alnum:]]*)@)?(?P<host>[[:alnum:].]+)(:(?P<port>\d+))?$"#
+
+	p1: {
+		Y: {
+			userinfo: "user"
+			host:     "mod.test"
+		}
+
+		X: #X.userinfo + #X.host + #X.port
+
+		#X: {
+			if Y.userinfo == _|_ {
+				userinfo: ""
+			}
+			if Y.userinfo != _|_ {
+				userinfo: Y.userinfo + "@"
+			}
+
+			host: Y.host
+
+			if Y.port == _|_ {
+				port: ""
+			}
+			if Y.port != _|_ {
+				port: ":" + strconv.FormatInt(Y.port, 10)
+			}
+		}
+
+		Y: {
+			if #Y.userinfo != _|_ {
+				userinfo: #Y.userinfo
+			}
+
+			host: #Y.host
+
+			if #Y.port != _|_ {
+				port: strconv.Atoi(#Y.port)
+			}
+		}
+
+		#Y: regexp.FindNamedSubmatch(#userHostPort, X)
+	}
+
+	p2: {
+		X: #X.userinfo + #X.host + #X.port
+
+		Y: {
+			userinfo: "user"
+			host:     "mod.test"
+		}
+
+		#X: {
+			if Y.userinfo == _|_ {
+				userinfo: ""
+			}
+			if Y.userinfo != _|_ {
+				userinfo: Y.userinfo + "@"
+			}
+
+			host: Y.host
+
+			if Y.port == _|_ {
+				port: ""
+			}
+			if Y.port != _|_ {
+				port: ":" + strconv.FormatInt(Y.port, 10)
+			}
+		}
+
+		Y: {
+			if #Y.userinfo != _|_ {
+				userinfo: #Y.userinfo
+			}
+
+			host: #Y.host
+
+			if #Y.port != _|_ {
+				port: strconv.Atoi(#Y.port)
+			}
+		}
+
+		#Y: regexp.FindNamedSubmatch(#userHostPort, X)
+	}
+
+	p3: {
+		X: #X.userinfo + #X.host + #X.port
+
+		#X: {
+			if Y.userinfo == _|_ {
+				userinfo: ""
+			}
+			if Y.userinfo != _|_ {
+				userinfo: Y.userinfo + "@"
+			}
+
+			host: Y.host
+
+			if Y.port == _|_ {
+				port: ""
+			}
+			if Y.port != _|_ {
+				port: ":" + strconv.FormatInt(Y.port, 10)
+			}
+		}
+
+		Y: {
+			userinfo: "user"
+			host:     "mod.test"
+		}
+
+		Y: {
+			if #Y.userinfo != _|_ {
+				userinfo: #Y.userinfo
+			}
+
+			host: #Y.host
+
+			if #Y.port != _|_ {
+				port: strconv.Atoi(#Y.port)
+			}
+		}
+
+		#Y: regexp.FindNamedSubmatch(#userHostPort, X)
+	}
+
+	p4: {
+		X: #X.userinfo + #X.host + #X.port
+
+		#X: {
+			if Y.userinfo == _|_ {
+				userinfo: ""
+			}
+			if Y.userinfo != _|_ {
+				userinfo: Y.userinfo + "@"
+			}
+
+			host: Y.host
+
+			if Y.port == _|_ {
+				port: ""
+			}
+			if Y.port != _|_ {
+				port: ":" + strconv.FormatInt(Y.port, 10)
+			}
+		}
+
+		#Y: regexp.FindNamedSubmatch(#userHostPort, X)
+
+		Y: {
+			userinfo: "user"
+			host:     "mod.test"
+		}
+
+		Y: {
+			if #Y.userinfo != _|_ {
+				userinfo: #Y.userinfo
+			}
+
+			host: #Y.host
+
+			if #Y.port != _|_ {
+				port: strconv.Atoi(#Y.port)
+			}
+		}
+	}
+}
+-- out/eval/stats --
+Leaks:  7
+Freed:  108
+Reused: 97
+Allocs: 18
+Retain: 311
+
+Unifications: 115
+Conjuncts:    238
+Disjuncts:    230
+-- out/eval --
+(struct){
+  minimal: (struct){
+    a: (_|_){
+      // [cycle] minimal.b: cycle with field a.port:
+      //     ./in.cue:18:6
+      port: (string){ "" }
+    }
+    b: (struct){
+      port: (_|_){
+        // [cycle] minimal.b: cycle with field a.port:
+        //     ./in.cue:18:6
+      }
+    }
+  }
+  small: (struct){
+    #userHostPort: (string){ "^(:(?P<port>\\d+))?$" }
+    p1: (struct){
+      #Y: (#struct){
+        port: (string){ "" }
+      }
+      #X: (_|_){
+        // [cycle] small.p1.#X: circular dependency in evaluation of conditionals: #Y.port changed after evaluation:
+        //     ./in.cue:31:7
+        // small.p1.#X: circular dependency in evaluation of conditionals: #Y.port changed after evaluation:
+        //     ./in.cue:34:7
+        port: (string){ "" }
+      }
+    }
+    p2: (struct){
+      #X: (_|_){
+        // [cycle] small.p2.#Y: cycle with field #X.port:
+        //     ./in.cue:50:47
+        port: (string){ "" }
+      }
+      #Y: (_|_){
+        // [cycle] small.p2.#Y: cycle with field #X.port:
+        //     ./in.cue:50:47
+      }
+    }
+  }
+  medium: (struct){
+    #userHostPort: (string){ "^(:(?P<port>\\d+))?$" }
+    p1: (struct){
+      #Y: (#struct){
+        port: (string){ "" }
+      }
+      Y: (_|_){
+        // [cycle] medium.p1.Y: circular dependency in evaluation of conditionals: #Y.port changed after evaluation:
+        //     ./in.cue:61:7
+      }
+      #X: (#struct){
+        port: (string){ "" }
+      }
+    }
+    p2: (struct){
+      #Y: (#struct){
+        port: (string){ "" }
+      }
+      #X: (#struct){
+        port: (string){ "" }
+      }
+      Y: (_|_){
+        // [cycle] medium.p2.Y: circular dependency in evaluation of conditionals: #Y.port changed after evaluation:
+        //     ./in.cue:95:7
+      }
+    }
+    p3: (struct){
+      Y: (_|_){
+        // [cycle] medium.p3.#X: cycle with field Y.port:
+        //     ./in.cue:114:7
+      }
+      #Y: (_|_){
+        // [incomplete] medium.p3.#Y: undefined field: port:
+        //     ./in.cue:108:47
+      }
+      #X: (_|_){
+        // [cycle] medium.p3.#X: cycle with field Y.port:
+        //     ./in.cue:114:7
+      }
+    }
+    p4: (struct){
+      Y: (_|_){
+        // [cycle] medium.p4.#X: cycle with field Y.port:
+        //     ./in.cue:134:7
+      }
+      #X: (_|_){
+        // [cycle] medium.p4.#X: cycle with field Y.port:
+        //     ./in.cue:134:7
+      }
+      #Y: (_|_){
+        // [cycle] medium.p4.#X: cycle with field Y.port:
+        //     ./in.cue:134:7
+      }
+    }
+    p5: (struct){
+      #X: (_|_){
+        // [cycle] medium.p5.#Y: cycle with field #X.port:
+        //     ./in.cue:158:47
+        port: (string){ "" }
+      }
+      #Y: (_|_){
+        // [cycle] medium.p5.#Y: cycle with field #X.port:
+        //     ./in.cue:158:47
+      }
+      Y: (struct){
+      }
+    }
+    p6: (struct){
+      #X: (_|_){
+        // [cycle] medium.p6.#Y: cycle with field #X.port:
+        //     ./in.cue:186:47
+        port: (string){ "" }
+      }
+      Y: (struct){
+      }
+      #Y: (_|_){
+        // [cycle] medium.p6.#Y: cycle with field #X.port:
+        //     ./in.cue:186:47
+      }
+    }
+  }
+  large: (struct){
+    #userHostPort: (string){ "^((?P<userinfo>[[:alnum:]]*)@)?(?P<host>[[:alnum:].]+)(:(?P<port>\\d+))?$" }
+    p1: (struct){
+      Y: (_|_){
+        // [cycle] large.p1.Y: circular dependency in evaluation of conditionals: #Y.port changed after evaluation:
+        //     ./in.cue:226:7
+        userinfo: (string){ "user" }
+        host: (string){ "mod.test" }
+      }
+      X: (string){ "user@mod.test" }
+      #X: (_|_){
+        // [cycle] large.p1.#X: circular dependency in evaluation of conditionals: Y.userinfo changed after evaluation:
+        //     ./in.cue:202:7
+        // large.p1.#X: circular dependency in evaluation of conditionals: Y.userinfo changed after evaluation:
+        //     ./in.cue:205:7
+        userinfo: (string){ "user@" }
+        port: (string){ "" }
+        host: (string){ "mod.test" }
+      }
+      #Y: (#struct){
+        host: (string){ "mod.test" }
+        port: (string){ "" }
+        userinfo: (string){ "user" }
+      }
+    }
+    p2: (struct){
+      X: (string){ "user@mod.test" }
+      Y: (struct){
+        userinfo: (string){ "user" }
+        host: (string){ "mod.test" }
+        port: (_|_){
+          // [cycle] large.p2.Y: undefined field: port:
+          //     ./in.cue:267:10
+        }
+      }
+      #X: (#struct){
+        userinfo: (string){ "user@" }
+        port: (string){ "" }
+        host: (string){ "mod.test" }
+      }
+      #Y: (#struct){
+        host: (string){ "mod.test" }
+        port: (string){ "" }
+        userinfo: (string){ "user" }
+      }
+    }
+    p3: (struct){
+      X: (string){ "user@mod.test" }
+      #X: (#struct){
+        userinfo: (string){ "user@" }
+        port: (string){ "" }
+        host: (string){ "mod.test" }
+      }
+      Y: (struct){
+        userinfo: (string){ "user" }
+        host: (string){ "mod.test" }
+        port: (_|_){
+          // [cycle] large.p3.Y: undefined field: port:
+          //     ./in.cue:308:10
+        }
+      }
+      #Y: (#struct){
+        host: (string){ "mod.test" }
+        port: (string){ "" }
+        userinfo: (string){ "user" }
+      }
+    }
+    p4: (struct){
+      X: (string){ "user@mod.test" }
+      #X: (#struct){
+        userinfo: (string){ "user@" }
+        port: (string){ "" }
+        host: (string){ "mod.test" }
+      }
+      #Y: (#struct){
+        host: (string){ "mod.test" }
+        port: (string){ "" }
+        userinfo: (string){ "user" }
+      }
+      Y: (struct){
+        userinfo: (string){ "user" }
+        host: (string){ "mod.test" }
+        port: (_|_){
+          // [cycle] large.p4.Y: undefined field: port:
+          //     ./in.cue:351:10
+        }
+      }
+    }
+  }
+}
+-- out/compile --
+--- in.cue
+{
+  minimal: {
+    a: {
+      if (〈1;b〉.port == _|_(explicit error (_|_ literal) in source)) {
+        port: ""
+      }
+    }
+    b: {
+      if (〈1;a〉.port == _|_(explicit error (_|_ literal) in source)) {
+        port: ""
+      }
+    }
+  }
+  small: {
+    #userHostPort: "^(:(?P<port>\\d+))?$"
+    p1: {
+      #Y: 〈import;regexp〉.FindNamedSubmatch(〈1;#userHostPort〉, 〈0;#X〉.port)
+      #X: {
+        if (〈1;#Y〉.port == _|_(explicit error (_|_ literal) in source)) {
+          port: ""
+        }
+        if (〈1;#Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: (":" + 〈import;strconv〉.FormatInt(〈2;#Y〉.port, 10))
+        }
+      }
+    }
+    p2: {
+      #X: {
+        if (〈1;#Y〉.port == _|_(explicit error (_|_ literal) in source)) {
+          port: ""
+        }
+        if (〈1;#Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: (":" + 〈import;strconv〉.FormatInt(〈2;#Y〉.port, 10))
+        }
+      }
+      #Y: 〈import;regexp〉.FindNamedSubmatch(〈1;#userHostPort〉, 〈0;#X〉.port)
+    }
+  }
+  medium: {
+    #userHostPort: "^(:(?P<port>\\d+))?$"
+    p1: {
+      #Y: 〈import;regexp〉.FindNamedSubmatch(〈1;#userHostPort〉, 〈0;#X〉.port)
+      Y: {
+        if (〈1;#Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: 〈import;strconv〉.Atoi(〈2;#Y〉.port)
+        }
+      }
+      #X: {
+        if (〈1;Y〉.port == _|_(explicit error (_|_ literal) in source)) {
+          port: ""
+        }
+        if (〈1;Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: (":" + 〈import;strconv〉.FormatInt(〈2;Y〉.port, 10))
+        }
+      }
+    }
+    p2: {
+      #Y: 〈import;regexp〉.FindNamedSubmatch(〈1;#userHostPort〉, 〈0;#X〉.port)
+      #X: {
+        if (〈1;Y〉.port == _|_(explicit error (_|_ literal) in source)) {
+          port: ""
+        }
+        if (〈1;Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: (":" + 〈import;strconv〉.FormatInt(〈2;Y〉.port, 10))
+        }
+      }
+      Y: {
+        if (〈1;#Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: 〈import;strconv〉.Atoi(〈2;#Y〉.port)
+        }
+      }
+    }
+    p3: {
+      Y: {
+        if (〈1;#Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: 〈import;strconv〉.Atoi(〈2;#Y〉.port)
+        }
+      }
+      #Y: 〈import;regexp〉.FindNamedSubmatch(〈1;#userHostPort〉, 〈0;#X〉.port)
+      #X: {
+        if (〈1;Y〉.port == _|_(explicit error (_|_ literal) in source)) {
+          port: ""
+        }
+        if (〈1;Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: (":" + 〈import;strconv〉.FormatInt(〈2;Y〉.port, 10))
+        }
+      }
+    }
+    p4: {
+      Y: {
+        if (〈1;#Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: 〈import;strconv〉.Atoi(〈2;#Y〉.port)
+        }
+      }
+      #X: {
+        if (〈1;Y〉.port == _|_(explicit error (_|_ literal) in source)) {
+          port: ""
+        }
+        if (〈1;Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: (":" + 〈import;strconv〉.FormatInt(〈2;Y〉.port, 10))
+        }
+      }
+      #Y: 〈import;regexp〉.FindNamedSubmatch(〈1;#userHostPort〉, 〈0;#X〉.port)
+    }
+    p5: {
+      #X: {
+        if (〈1;Y〉.port == _|_(explicit error (_|_ literal) in source)) {
+          port: ""
+        }
+        if (〈1;Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: (":" + 〈import;strconv〉.FormatInt(〈2;Y〉.port, 10))
+        }
+      }
+      #Y: 〈import;regexp〉.FindNamedSubmatch(〈1;#userHostPort〉, 〈0;#X〉.port)
+      Y: {
+        if (〈1;#Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: 〈import;strconv〉.Atoi(〈2;#Y〉.port)
+        }
+      }
+    }
+    p6: {
+      #X: {
+        if (〈1;Y〉.port == _|_(explicit error (_|_ literal) in source)) {
+          port: ""
+        }
+        if (〈1;Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: (":" + 〈import;strconv〉.FormatInt(〈2;Y〉.port, 10))
+        }
+      }
+      Y: {
+        if (〈1;#Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: 〈import;strconv〉.Atoi(〈2;#Y〉.port)
+        }
+      }
+      #Y: 〈import;regexp〉.FindNamedSubmatch(〈1;#userHostPort〉, 〈0;#X〉.port)
+    }
+  }
+  large: {
+    #userHostPort: "^((?P<userinfo>[[:alnum:]]*)@)?(?P<host>[[:alnum:].]+)(:(?P<port>\\d+))?$"
+    p1: {
+      Y: {
+        userinfo: "user"
+        host: "mod.test"
+      }
+      X: ((〈0;#X〉.userinfo + 〈0;#X〉.host) + 〈0;#X〉.port)
+      #X: {
+        if (〈1;Y〉.userinfo == _|_(explicit error (_|_ literal) in source)) {
+          userinfo: ""
+        }
+        if (〈1;Y〉.userinfo != _|_(explicit error (_|_ literal) in source)) {
+          userinfo: (〈2;Y〉.userinfo + "@")
+        }
+        host: 〈1;Y〉.host
+        if (〈1;Y〉.port == _|_(explicit error (_|_ literal) in source)) {
+          port: ""
+        }
+        if (〈1;Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: (":" + 〈import;strconv〉.FormatInt(〈2;Y〉.port, 10))
+        }
+      }
+      Y: {
+        if (〈1;#Y〉.userinfo != _|_(explicit error (_|_ literal) in source)) {
+          userinfo: 〈2;#Y〉.userinfo
+        }
+        host: 〈1;#Y〉.host
+        if (〈1;#Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: 〈import;strconv〉.Atoi(〈2;#Y〉.port)
+        }
+      }
+      #Y: 〈import;regexp〉.FindNamedSubmatch(〈1;#userHostPort〉, 〈0;X〉)
+    }
+    p2: {
+      X: ((〈0;#X〉.userinfo + 〈0;#X〉.host) + 〈0;#X〉.port)
+      Y: {
+        userinfo: "user"
+        host: "mod.test"
+      }
+      #X: {
+        if (〈1;Y〉.userinfo == _|_(explicit error (_|_ literal) in source)) {
+          userinfo: ""
+        }
+        if (〈1;Y〉.userinfo != _|_(explicit error (_|_ literal) in source)) {
+          userinfo: (〈2;Y〉.userinfo + "@")
+        }
+        host: 〈1;Y〉.host
+        if (〈1;Y〉.port == _|_(explicit error (_|_ literal) in source)) {
+          port: ""
+        }
+        if (〈1;Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: (":" + 〈import;strconv〉.FormatInt(〈2;Y〉.port, 10))
+        }
+      }
+      Y: {
+        if (〈1;#Y〉.userinfo != _|_(explicit error (_|_ literal) in source)) {
+          userinfo: 〈2;#Y〉.userinfo
+        }
+        host: 〈1;#Y〉.host
+        if (〈1;#Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: 〈import;strconv〉.Atoi(〈2;#Y〉.port)
+        }
+      }
+      #Y: 〈import;regexp〉.FindNamedSubmatch(〈1;#userHostPort〉, 〈0;X〉)
+    }
+    p3: {
+      X: ((〈0;#X〉.userinfo + 〈0;#X〉.host) + 〈0;#X〉.port)
+      #X: {
+        if (〈1;Y〉.userinfo == _|_(explicit error (_|_ literal) in source)) {
+          userinfo: ""
+        }
+        if (〈1;Y〉.userinfo != _|_(explicit error (_|_ literal) in source)) {
+          userinfo: (〈2;Y〉.userinfo + "@")
+        }
+        host: 〈1;Y〉.host
+        if (〈1;Y〉.port == _|_(explicit error (_|_ literal) in source)) {
+          port: ""
+        }
+        if (〈1;Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: (":" + 〈import;strconv〉.FormatInt(〈2;Y〉.port, 10))
+        }
+      }
+      Y: {
+        userinfo: "user"
+        host: "mod.test"
+      }
+      Y: {
+        if (〈1;#Y〉.userinfo != _|_(explicit error (_|_ literal) in source)) {
+          userinfo: 〈2;#Y〉.userinfo
+        }
+        host: 〈1;#Y〉.host
+        if (〈1;#Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: 〈import;strconv〉.Atoi(〈2;#Y〉.port)
+        }
+      }
+      #Y: 〈import;regexp〉.FindNamedSubmatch(〈1;#userHostPort〉, 〈0;X〉)
+    }
+    p4: {
+      X: ((〈0;#X〉.userinfo + 〈0;#X〉.host) + 〈0;#X〉.port)
+      #X: {
+        if (〈1;Y〉.userinfo == _|_(explicit error (_|_ literal) in source)) {
+          userinfo: ""
+        }
+        if (〈1;Y〉.userinfo != _|_(explicit error (_|_ literal) in source)) {
+          userinfo: (〈2;Y〉.userinfo + "@")
+        }
+        host: 〈1;Y〉.host
+        if (〈1;Y〉.port == _|_(explicit error (_|_ literal) in source)) {
+          port: ""
+        }
+        if (〈1;Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: (":" + 〈import;strconv〉.FormatInt(〈2;Y〉.port, 10))
+        }
+      }
+      #Y: 〈import;regexp〉.FindNamedSubmatch(〈1;#userHostPort〉, 〈0;X〉)
+      Y: {
+        userinfo: "user"
+        host: "mod.test"
+      }
+      Y: {
+        if (〈1;#Y〉.userinfo != _|_(explicit error (_|_ literal) in source)) {
+          userinfo: 〈2;#Y〉.userinfo
+        }
+        host: 〈1;#Y〉.host
+        if (〈1;#Y〉.port != _|_(explicit error (_|_ literal) in source)) {
+          port: 〈import;strconv〉.Atoi(〈2;#Y〉.port)
+        }
+      }
+    }
+  }
+}

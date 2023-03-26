@@ -1,0 +1,34 @@
+# TODO: revert to cue eval -i post fix for #1786
+! exec cue eval structs.cue
+cmp stderr expect-stderr
+
+-- frontmatter.toml --
+title = "Closed structs"
+description = ""
+
+-- text.md --
+Struct is the most important composite type in CUE.
+
+A struct may be open or closed.
+A closed struct may only be merged with structs that have fields that
+it defines to be allowed.
+In other words, closing a struct is equivalent to requiring that all
+other values be undefined.
+
+A closed struct can be created using the `close` builtin,
+but are more commonly defined using a _definition_, defined next.
+
+-- structs.cue --
+a: close({
+    field: int
+})
+
+b: a & {
+    feild: 3
+}
+
+-- expect-stderr --
+b.feild: field not allowed:
+    ./structs.cue:1:10
+    ./structs.cue:5:4
+    ./structs.cue:6:5

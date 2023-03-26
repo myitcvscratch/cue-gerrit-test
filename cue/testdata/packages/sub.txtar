@@ -1,0 +1,37 @@
+exec cue eval ./pkg:foo
+
+-- cue.mod/module.cue --
+module: "mod.test"
+-- in.cue --
+package test
+
+import pkg2 "mod.test/foo/pkg1"
+
+#pkg1: pkg2.Object
+
+"Hello \(#pkg1)!"
+-- foo/pkg1/file.cue --
+package pkg1
+
+Object: "World"
+-- out/eval/stats --
+Leaks:  2
+Freed:  2
+Reused: 0
+Allocs: 4
+Retain: 3
+
+Unifications: 4
+Conjuncts:    6
+Disjuncts:    4
+-- out/eval --
+(string){
+  "Hello World!"
+  #pkg1: (string){ "World" }
+}
+-- out/compile --
+--- in.cue
+{
+  #pkg1: 〈import;"mod.test/foo/pkg1"〉.Object
+  "Hello \(〈0;#pkg1〉)!"
+}

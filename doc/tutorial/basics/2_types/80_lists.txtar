@@ -1,0 +1,55 @@
+# TODO: revert to cue eval -i post fix for #1786
+! exec cue eval lists.cue
+cmp stderr expect-stderr
+
+-- frontmatter.toml --
+title = "Lists"
+description = ""
+
+-- text.md --
+Lists define arbitrary sequences of CUE values.
+A list can be closed or open ended.
+Open-ended lists may have some predefined elements, but may have
+additional, possibly typed elements.
+
+In the example we define `IP` to be a list of `4` elements of type `uint8`, which
+is a predeclared value of `>=0 & <=255`.
+`PrivateIP` defines the IP ranges defined for private use.
+Note that as it is already defined to be an `IP`, the length of the list
+is already fixed at `4` and we do not have to specify a value for all elements.
+Also note that instead of writing `...uint8`, we could have written `...`
+as the type constraint is already already implied by `IP`.
+
+The output contains a valid private IP address (`myIP`)
+and an invalid one (`yourIP`).
+
+-- lists.cue --
+import "list"
+
+IP: list.Repeat([ uint8 ], 4)
+
+PrivateIP: IP
+PrivateIP: [10, ...uint8] |
+    [192, 168, ...] |
+    [172, >=16 & <=32, ...]
+
+myIP: PrivateIP
+myIP: [10, 2, 3, 4]
+
+yourIP: PrivateIP
+yourIP: [11, 1, 2, 3]
+
+-- expect-stderr --
+yourIP: 3 errors in empty disjunction:
+yourIP.0: conflicting values 10 and 11:
+    ./lists.cue:6:13
+    ./lists.cue:13:9
+    ./lists.cue:14:10
+yourIP.0: conflicting values 172 and 11:
+    ./lists.cue:8:6
+    ./lists.cue:13:9
+    ./lists.cue:14:10
+yourIP.0: conflicting values 192 and 11:
+    ./lists.cue:7:6
+    ./lists.cue:13:9
+    ./lists.cue:14:10

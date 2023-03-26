@@ -1,0 +1,69 @@
+-- in.cue --
+x: string
+X=(x): 4
+Y=(x): 6
+Z=("y"): int
+a: {
+	labelX: X
+	labelY: Y
+	labelZ: Z
+}
+E=["cue"]: name: E | null
+
+q: "q"
+q1: "q1"
+r: "r"
+r1: "r1"
+("s-"+q)?: 1
+("s-"+r)!: 2
+("s-"+q1)?: (r1)!: 3
+-- out/definition --
+x:     string
+X=(x): 4
+Y=(x): 6
+Z="y": int
+a: {
+	labelX: X
+	labelY: Y
+	labelZ: Z
+}
+E=["cue"]: {
+	name: E | null
+}
+q:      "q"
+q1:     "q1"
+r:      "r"
+r1:     "r1"
+"s-q"?: 1
+"s-r"!: 2
+"s-q1"?: {
+	(r1)!: 3
+}
+-- out/doc --
+[]
+[x]
+[a]
+[a labelX]
+[a labelY]
+[a labelZ]
+[q]
+[q1]
+[r]
+[r1]
+[_]
+[y]
+["s-q"]
+["s-r"]
+["s-q1"]
+["s-q1" r1]
+-- out/value --
+== Simplified
+_|_ // invalid non-ground value string (must be concrete string) (and 1 more errors)
+== Raw
+_|_ // invalid non-ground value string (must be concrete string) (and 1 more errors)
+== Final
+_|_ // invalid non-ground value string (must be concrete string) (and 1 more errors)
+== All
+_|_ // invalid non-ground value string (must be concrete string) (and 1 more errors)
+== Eval
+_|_ // invalid non-ground value string (must be concrete string) (and 1 more errors)

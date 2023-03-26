@@ -1,0 +1,30 @@
+-- in.cue --
+#dev:   int
+"#dev": int
+_dev:   int
+_#dev:  int
+-- out/compile --
+--- in.cue
+{
+  #dev: int
+  "#dev": int
+  _dev: int
+  _#dev: int
+}
+-- out/eval/stats --
+Leaks:  0
+Freed:  5
+Reused: 3
+Allocs: 2
+Retain: 0
+
+Unifications: 5
+Conjuncts:    5
+Disjuncts:    5
+-- out/eval --
+(struct){
+  #dev: (int){ int }
+  "#dev": (int){ int }
+  _dev: (int){ int }
+  _#dev: (int){ int }
+}

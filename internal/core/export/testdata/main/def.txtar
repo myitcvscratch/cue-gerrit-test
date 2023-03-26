@@ -1,0 +1,63 @@
+-- in.cue --
+a:  int | *2
+b?: 4 | 5
+c: [string]: int
+
+#d: {
+	e!: string
+	e?: =~"a"
+}
+-- out/definition --
+a:  int | *2
+b?: 4 | 5
+c: {
+	[string]: int
+}
+#d: {
+	e!: =~"a"
+}
+-- out/doc --
+[]
+[a]
+[b]
+[c]
+[#d]
+[#d e]
+-- out/value --
+== Simplified
+{
+	a: *2 | int
+	c: {}
+}
+== Raw
+{
+	a:  *2 | int
+	b?: 4 | 5
+	c: {}
+	#d: {
+		e!: =~"a"
+	}
+}
+== Final
+{
+	a: 2
+	c: {}
+}
+== All
+{
+	a:  *2 | int
+	b?: 4 | 5
+	c: {}
+	#d: {
+		e!: =~"a"
+	}
+}
+== Eval
+{
+	a:  2
+	b?: 4 | 5
+	c: {}
+	#d: {
+		e!: =~"a"
+	}
+}

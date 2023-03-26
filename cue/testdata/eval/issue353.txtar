@@ -1,0 +1,56 @@
+-- in.cue --
+e: #Example
+
+e: a: "hello"
+
+#Example: {
+	a: string
+	{
+		value?: string
+	} | {
+		externalValue?: string
+	}
+}
+-- out/eval/stats --
+Leaks:  0
+Freed:  15
+Reused: 9
+Allocs: 6
+Retain: 0
+
+Unifications: 11
+Conjuncts:    21
+Disjuncts:    15
+-- out/eval --
+(struct){
+  e: (#struct){ |((#struct){
+      a: (string){ "hello" }
+      value?: (string){ string }
+    }, (#struct){
+      a: (string){ "hello" }
+      externalValue?: (string){ string }
+    }) }
+  #Example: (#struct){ |((#struct){
+      a: (string){ string }
+      value?: (string){ string }
+    }, (#struct){
+      a: (string){ string }
+      externalValue?: (string){ string }
+    }) }
+}
+-- out/compile --
+--- in.cue
+{
+  e: 〈0;#Example〉
+  e: {
+    a: "hello"
+  }
+  #Example: {
+    a: string
+    ({
+      value?: string
+    }|{
+      externalValue?: string
+    })
+  }
+}

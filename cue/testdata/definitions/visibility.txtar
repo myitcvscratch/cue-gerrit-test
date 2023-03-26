@@ -1,0 +1,45 @@
+-- in.cue --
+#foo: {
+	name: string
+}
+foo: #foo & {
+	// These should all be allowed.
+	_name:  "foo"
+	_#name: "bar"
+
+	#name: "baz"
+}
+-- out/eval/stats --
+Leaks:  0
+Freed:  8
+Reused: 5
+Allocs: 3
+Retain: 0
+
+Unifications: 8
+Conjuncts:    10
+Disjuncts:    8
+-- out/eval --
+(struct){
+  #foo: (#struct){
+    name: (string){ string }
+  }
+  foo: (#struct){
+    name: (string){ string }
+    _name: (string){ "foo" }
+    _#name: (string){ "bar" }
+    #name: (string){ "baz" }
+  }
+}
+-- out/compile --
+--- in.cue
+{
+  #foo: {
+    name: string
+  }
+  foo: (〈0;#foo〉 & {
+    _name: "foo"
+    _#name: "bar"
+    #name: "baz"
+  })
+}

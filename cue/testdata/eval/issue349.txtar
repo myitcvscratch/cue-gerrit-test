@@ -1,0 +1,48 @@
+-- in.cue --
+ex: {
+	"aaa":  "aaa"
+	"list": "list"
+	"zzz":  "zzz"
+	"AAA":  "AAA"
+	"html": "html"
+	"HTML": "html"
+	"ZZZ":  "ZZZ"
+	"Html": "html"
+}
+-- out/eval/stats --
+Leaks:  0
+Freed:  10
+Reused: 7
+Allocs: 3
+Retain: 0
+
+Unifications: 10
+Conjuncts:    10
+Disjuncts:    10
+-- out/eval --
+(struct){
+  ex: (struct){
+    aaa: (string){ "aaa" }
+    list: (string){ "list" }
+    zzz: (string){ "zzz" }
+    AAA: (string){ "AAA" }
+    html: (string){ "html" }
+    HTML: (string){ "html" }
+    ZZZ: (string){ "ZZZ" }
+    Html: (string){ "html" }
+  }
+}
+-- out/compile --
+--- in.cue
+{
+  ex: {
+    aaa: "aaa"
+    list: "list"
+    zzz: "zzz"
+    AAA: "AAA"
+    html: "html"
+    HTML: "html"
+    ZZZ: "ZZZ"
+    Html: "html"
+  }
+}

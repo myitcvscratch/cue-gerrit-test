@@ -1,0 +1,26 @@
+-- in.cue --
+Foo: {
+}
+
+Foo
+-- out/eval/stats --
+Leaks:  0
+Freed:  2
+Reused: 0
+Allocs: 2
+Retain: 1
+
+Unifications: 2
+Conjuncts:    5
+Disjuncts:    3
+-- out/eval --
+(struct){
+  Foo: (struct){
+  }
+}
+-- out/compile --
+--- in.cue
+{
+  Foo: {}
+  〈0;Foo〉
+}

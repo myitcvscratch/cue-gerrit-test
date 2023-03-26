@@ -1,0 +1,37 @@
+-- in.cue --
+#Value: int
+
+foo: #Value
+foo: !=bar
+bar: #Value
+bar: !=foo
+
+bar: 0
+foo: 1
+-- out/compile --
+--- in.cue
+{
+  #Value: int
+  foo: 〈0;#Value〉
+  foo: !=〈0;bar〉
+  bar: 〈0;#Value〉
+  bar: !=〈0;foo〉
+  bar: 0
+  foo: 1
+}
+-- out/eval/stats --
+Leaks:  0
+Freed:  4
+Reused: 1
+Allocs: 3
+Retain: 1
+
+Unifications: 4
+Conjuncts:    10
+Disjuncts:    4
+-- out/eval --
+(struct){
+  #Value: (int){ int }
+  foo: (int){ 1 }
+  bar: (int){ 0 }
+}
